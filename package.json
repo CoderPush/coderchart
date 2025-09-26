@@ -3,14 +3,16 @@
   "displayName": "coderchart",
   "version": "0.0.0",
   "author": "harley",
-  "description": "",
+  "description": "Chrome extension that auto-renders Mermaid diagrams on ChatGPT with inline downloads.",
   "type": "module",
   "license": "MIT",
   "keywords": [
     "chrome-extension",
+    "mermaid",
+    "diagram",
+    "chatgpt",
     "react",
-    "vite",
-    "create-chrome-ext"
+    "vite"
   ],
   "engines": {
     "node": ">=14.18.0"
