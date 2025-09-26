@@ -2,7 +2,13 @@ name: Build Release Package
 
 on:
   release:
-    types: [released]
+    types: [published, prereleased]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to attach assets to
+        required: true
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,9 +44,19 @@ jobs:
       - name: Build extension package
         run: pnpm run zip
 
+      - name: Determine release tag
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload package to release
         uses: softprops/action-gh-release@v2
         with:
           files: package/*.zip
+          tag_name: ${{ steps.release.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
