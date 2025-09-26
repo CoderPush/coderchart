@@ -20,17 +20,7 @@ const manifest = {
     512: 'img/logo-512.png',
     1024: 'img/logo-1024.png',
   } as const,
-  action: {
-    default_popup: 'popup.html' as const,
-    default_icon: {
-      16: 'img/logo-16.png',
-      32: 'img/logo-32.png',
-      48: 'img/logo-48.png',
-      128: 'img/logo-128.png',
-    } as const,
-  },
   options_page: 'options.html' as const,
-  devtools_page: 'devtools.html' as const,
   background: {
     service_worker: 'src/background/index.ts' as const,
     type: 'module',
@@ -41,9 +31,6 @@ const manifest = {
       js: ['src/contentScript/index.ts'] as const,
     },
   ],
-  side_panel: {
-    default_path: 'sidepanel.html' as const,
-  },
   web_accessible_resources: [
     {
       resources: [
@@ -60,10 +47,7 @@ const manifest = {
       matches: [] as const,
     },
   ],
-  permissions: ['sidePanel', 'storage'],
-  chrome_url_overrides: {
-    newtab: 'newtab.html' as const,
-  },
+  permissions: ['storage'],
 } satisfies ManifestV3
 
 export default defineManifest(manifest)
