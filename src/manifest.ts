@@ -16,6 +16,9 @@ const manifest = {
     32: 'img/logo-32.png',
     48: 'img/logo-48.png',
     128: 'img/logo-128.png',
+    256: 'img/logo-256.png',
+    512: 'img/logo-512.png',
+    1024: 'img/logo-1024.png',
   } as const,
   action: {
     default_popup: 'popup.html' as const,
@@ -23,6 +26,7 @@ const manifest = {
       16: 'img/logo-16.png',
       32: 'img/logo-32.png',
       48: 'img/logo-48.png',
+      128: 'img/logo-128.png',
     } as const,
   },
   options_page: 'options.html' as const,
@@ -42,7 +46,17 @@ const manifest = {
   },
   web_accessible_resources: [
     {
-      resources: ['img/logo-16.png', 'img/logo-32.png', 'img/logo-48.png', 'img/logo-128.png'] as const,
+      resources: [
+        'img/logo-16.png',
+        'img/logo-32.png',
+        'img/logo-48.png',
+        'img/logo-128.png',
+        'img/logo-256.png',
+        'img/logo-512.png',
+        'img/logo-1024.png',
+        'img/logo-light-512.png',
+        'img/logo-light-1024.png',
+      ] as const,
       matches: [] as const,
     },
   ],

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <style>
+    .bubble { fill:#FFFFFF; stroke:#0E1E1A; stroke-width:16; }
+    .code { fill:#0E1E1A; opacity:0.75; }
+    .chart-stroke { stroke:#00F5D4; stroke-width:48; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+    .node { fill:#00F5D4; }
+  </style>
+
+  <path class="bubble"
+        d="M224 128h576c70 0 128 58 128 128v416c0 70-58 128-128 128H432l-168 144c-12 10-32 2-32-13V800H224c-70 0-128-58-128-128V256c0-70 58-128 128-128z"/>
+  <rect class="code" x="272" y="328" width="224" height="36" rx="18"/>
+  <rect class="code" x="272" y="408" width="192" height="36" rx="18"/>
+  <rect class="code" x="272" y="488" width="240" height="36" rx="18"/>
+  <rect x="536" y="296" width="24" height="280" rx="12" fill="#0E1E1A" opacity="0.1"/>
+  <path class="chart-stroke" d="M708 360 L640 520"/>
+  <path class="chart-stroke" d="M708 360 L776 520"/>
+  <path class="chart-stroke" d="M640 520 L776 520"/>
+  <circle class="node" cx="708" cy="360" r="36"/>
+  <circle class="node" cx="640" cy="520" r="36"/>
+  <circle class="node" cx="776" cy="520" r="36"/>
+</svg>
