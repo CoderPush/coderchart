@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     build: {
       emptyOutDir: true,
       outDir: 'build',
+      chunkSizeWarningLimit: 1600,
       rollupOptions: {
         output: {
           chunkFileNames: 'assets/chunk-[hash].js',

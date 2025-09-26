@@ -1,4 +1,7 @@
-import mermaid from 'mermaid'
+type MermaidNamespace = {
+  initialize: (config: { startOnLoad: boolean; theme: string; securityLevel?: string }) => void
+  render: (id: string, definition: string) => Promise<{ svg: string; bindFunctions?: (element: Element) => void }>
+}
 import { DEFAULT_SETTINGS, getSettings, normalizeSettings } from '../shared/settings'
 import { doesUrlMatchPatterns } from '../shared/url'
 
@@ -11,6 +14,17 @@ let observer: MutationObserver | null = null
 let isActive = false
 let currentSettings = DEFAULT_SETTINGS
 const processedBlocks = new Map<HTMLElement, BlockRegistryEntry>()
+let mermaidPromise: Promise<MermaidNamespace> | null = null
+
+async function ensureMermaid(): Promise<MermaidNamespace> {
+  if (!mermaidPromise) {
+    mermaidPromise = import('mermaid').then((module) => {
+      const candidate = (module as { default?: MermaidNamespace })?.default
+      return (candidate ?? (module as unknown as MermaidNamespace))
+    })
+  }
+  return mermaidPromise
+}
 
 const RENDER_HARD_FAIL_NOTICE = 'Mermaid could not render this diagram.'
 const MERMAID_KEYWORDS = [
@@ -53,7 +67,7 @@ async function initialise() {
       return
     }
     const nextSettings = normalizeSettings(changes.settings.newValue)
-    applySettings(nextSettings)
+    void applySettings(nextSettings)
   })
 }
 
@@ -63,7 +77,7 @@ async function activate() {
 
   await ensureDomReady()
 
-  configureMermaid()
+  await configureMermaid()
   processRoots([document])
   startObservers()
 }
@@ -76,7 +90,7 @@ function deactivate() {
   clearRenderedBlocks()
 }
 
-function applySettings(next: typeof currentSettings) {
+async function applySettings(next: typeof currentSettings) {
   const shouldBeActive = shouldActivate(next)
   currentSettings = next
 
@@ -88,7 +102,7 @@ function applySettings(next: typeof currentSettings) {
     deactivate()
   }
   if (shouldBeActive && isActive) {
-    configureMermaid()
+    await configureMermaid()
     processRoots([document])
   }
 }
@@ -242,6 +256,7 @@ function looksLikeMermaid(code: HTMLElement): boolean {
 }
 
 async function renderBlock(block: MermaidBlock) {
+  const mermaid = await ensureMermaid()
   const source = extractSource(block.code)
   if (!source) {
     return
@@ -451,7 +466,8 @@ function extractSource(code: HTMLElement): string {
   return rawText.replace(/\u200B/g, '').trim()
 }
 
-function configureMermaid() {
+async function configureMermaid() {
+  const mermaid = await ensureMermaid()
   mermaid.initialize({
     startOnLoad: false,
     theme: isDarkMode() ? 'dark' : 'default',
