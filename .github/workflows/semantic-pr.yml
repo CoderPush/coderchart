@@ -1,7 +1,7 @@
 name: Enforce Conventional PR Title
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - edited
@@ -16,7 +16,9 @@ jobs:
   semantic-pr:
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           types: |
             build
@@ -30,5 +32,3 @@ jobs:
             revert
             style
             test
-      - name: PR title follows Conventional Commits
-        run: echo "✅ PR title matches Conventional Commits"
