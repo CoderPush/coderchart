@@ -2,6 +2,8 @@
 
 CoderChart follows the typical MV3 separation: a background service worker maintains defaults, the content script renders diagrams in-page, and the options UI manages configuration. Shared utilities in `src/shared` allow all surfaces to agree on settings and URL matching.
 
+For a user-centric walkthrough of the lifecycle, see [`extension-flow.md`](./extension-flow.md).
+
 ## Runtime Components
 
 - **Background (`src/background/index.ts`)**
@@ -25,7 +27,7 @@ CoderChart follows the typical MV3 separation: a background service worker maint
 
 ```mermaid
 flowchart TD
-    A[Load content script] --> B[getSettings()]
+    A[Load content script] --> B[Fetch settings]
     B --> C{autoRender enabled?}
     C -- No --> D[Stay idle]
     C -- Yes --> E{URL matches whitelist?}
@@ -55,5 +57,6 @@ flowchart TD
 
 ## Known Constraints
 
-- Builds occasionally report Rollup chunk-size warnings; adjust splitting before release if bundle size grows.
-- Rendering currently assumes Mermaid syntax; invalid diagrams surface an inline error but do not retry automatically.
+- Clearing all host patterns in options is not persisted: `normalizeSettings` restores the default ChatGPT domains, so disable `autoRender` to pause rendering globally.
+- PNG export relies on drawing the generated SVG into a canvas; diagrams that pull in external assets or exceed canvas limits can fail to export and log a warning.
+- Mermaid parse failures surface inline with a copyable fix prompt, but there is still no automatic retry or self-healing.

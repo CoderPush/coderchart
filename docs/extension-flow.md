@@ -1,17 +1,17 @@
 # Extension Flow
 
-This guide walks through the end-to-end experience from installation to exporting rendered diagrams.
+This guide outlines the user-visible lifecycle. For component responsibilities and deeper mechanics, see [`architecture.md`](./architecture.md).
 
-## Narrative Flow
+## Lifecycle Overview
 
-1. **Install:** User loads the unpacked build or installs from the Chrome Web Store. The background script seeds default settings in `chrome.storage.sync`.
-2. **Grant permissions:** Chrome applies host permissions declared in `manifest.ts` (ChatGPT domains and localhost during development).
-3. **Open supported page:** When the user opens chatgpt.com or another whitelisted host, the content script loads, retrieves settings, and checks the URL against the whitelist.
-4. **Render diagrams:** Matching Mermaid code fences trigger the inline renderer. Mermaid initialises with theme selection, generates SVG, and injects a container with toolbar controls.
-5. **Adjust settings:** Users can visit `options.html` to disable auto-rendering, edit host patterns, or reset to defaults. Changes sync across devices.
-6. **Use toolbar:** Inline buttons allow collapsing/expanding the diagram, scrolling back to the source code block, and exporting as SVG or PNG.
-7. **Download pipeline:** SVG downloads reuse the cached render, while PNG downloads convert the SVG via an off-screen canvas before prompting a file save.
-8. **Keep updated:** A MutationObserver re-runs rendering when the chat adds new content, and storage listeners reconfigure the script when settings change.
+| Step | Trigger | Primary owner | Notes |
+| --- | --- | --- | --- |
+| Install or upgrade | Extension installed from source or Web Store | Background service worker | Seeds defaults and handles migrations (`architecture.md` → Runtime Components). |
+| Host access granted | Chrome applies `manifest.ts` host permissions | Chrome / MV3 platform | Controls where the content script can run (`architecture.md` → Runtime Components). |
+| Page activation | User opens a whitelisted URL | Content script | Fetches settings, checks URL against patterns, and, if allowed, initialises Mermaid (`architecture.md` → Data Flow Sequence). |
+| Inline rendering | Mermaid blocks detected | Content script + Mermaid runtime | Injects managed containers, themes Mermaid, and caches SVG output (`architecture.md` → Mermaid Rendering & Downloads). |
+| Settings changes | Options UI edits or resets settings | Options UI + shared settings utils | Saves updates through `saveSettings`; listeners reconcile state across surfaces (`architecture.md` → Settings Synchronisation). |
+| Continuous updates | Chat adds new content or settings sync changes arrive | Content script | MutationObserver re-runs detection; storage listeners reapply activation rules (`architecture.md` → Settings Synchronisation). |
 
 ## Sequence Diagram
 
@@ -21,7 +21,8 @@ sequenceDiagram
     participant C as Chrome
     participant B as Background
     participant CS as Content Script
-    participant Opt as Options UI
+    participant Options as Options UI
+    participant Toolbar as Download Toolbar
 
     U->>C: Install extension
     C->>B: fire onInstalled
@@ -40,8 +41,8 @@ sequenceDiagram
     U->>Toolbar: Click download SVG/PNG
     Toolbar->>CS: fetch cached SVG / convert to PNG
     CS->>U: Trigger file download
-    U->>Opt: Open options page
-    Opt->>chrome.storage.sync: save updated settings
+    U->>Options: Open options page
+    Options->>chrome.storage.sync: save updated settings
     chrome.storage.sync-->>CS: onChanged event
     CS->>CS: Apply settings (activate/deactivate/re-render)
 ```

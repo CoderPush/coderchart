@@ -23,7 +23,8 @@ Additional scripts live in `package.json`, including `pnpm build` for production
 - [Extension Flow](./extension-flow.md)
 - [UI Guidelines](./ui-guidelines.md)
 - [Testing Guide](./testing.md)
-- [Changelog](./changelog.md)
+
+Release notes are generated automatically via release-please and published with GitHub Releases; there is no manual changelog in this folder.
 
 ## Doc Conventions
 
