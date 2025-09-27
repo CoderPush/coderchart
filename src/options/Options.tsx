@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_SETTINGS, ExtensionSettings, getSettings, saveSettings, normalizeSettings } from '../shared/settings'
 
 import './Options.css'
@@ -6,12 +6,14 @@ import './Options.css'
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 const defaultState = cloneSettings(DEFAULT_SETTINGS)
+const SAVE_STATUS_RESET_DELAY_MS = 2400
 
 export const Options = () => {
   const [settings, setSettings] = useState<ExtensionSettings>(defaultState)
   const [newPattern, setNewPattern] = useState('')
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const resetStatusTimeout = useRef<number | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -28,6 +30,14 @@ export const Options = () => {
       })
     return () => {
       mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (resetStatusTimeout.current !== null) {
+        window.clearTimeout(resetStatusTimeout.current)
+      }
     }
   }, [])
 
@@ -74,6 +84,10 @@ export const Options = () => {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    if (resetStatusTimeout.current !== null) {
+      window.clearTimeout(resetStatusTimeout.current)
+      resetStatusTimeout.current = null
+    }
     setStatus('saving')
     setErrorMessage(null)
     try {
@@ -81,9 +95,10 @@ export const Options = () => {
       await saveSettings(normalized)
       setSettings(cloneSettings(normalized))
       setStatus('saved')
-      setTimeout(() => {
+      resetStatusTimeout.current = window.setTimeout(() => {
         setStatus('idle')
-      }, 2400)
+        resetStatusTimeout.current = null
+      }, SAVE_STATUS_RESET_DELAY_MS)
     } catch (error) {
       console.error('Failed to save settings', error)
       setStatus('error')
