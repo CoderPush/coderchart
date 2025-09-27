@@ -298,7 +298,7 @@ async function renderBlock(block: MermaidBlock) {
     }
 
     diagramHost.innerHTML = ''
-    diagramHost.append(createErrorNotice(diagramHost.ownerDocument, err))
+    diagramHost.append(createErrorNotice(diagramHost.ownerDocument, err, source))
     container.dataset[BLOCK_DATA_STATUS] = 'error'
     registry.lastSvg = null
     registry.lastRenderId = undefined
@@ -652,7 +652,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   })
 }
 
-function createErrorNotice(doc: Document, err: unknown): HTMLElement {
+function createErrorNotice(doc: Document, err: unknown, source: string): HTMLElement {
   const wrapper = doc.createElement('div')
   wrapper.style.display = 'flex'
   wrapper.style.flexDirection = 'column'
@@ -665,7 +665,8 @@ function createErrorNotice(doc: Document, err: unknown): HTMLElement {
   title.style.color = isDarkMode() ? '#f87171' : '#b91c1c'
 
   const details = doc.createElement('pre')
-  details.textContent = err instanceof Error ? err.message : String(err)
+  const errorMessage = err instanceof Error ? err.message : String(err)
+  details.textContent = errorMessage
   details.style.margin = '0'
   details.style.whiteSpace = 'pre-wrap'
   details.style.fontSize = '0.75rem'
@@ -680,8 +681,122 @@ function createErrorNotice(doc: Document, err: unknown): HTMLElement {
   hint.style.fontSize = '0.75rem'
   hint.style.color = isDarkMode() ? 'rgba(226, 232, 240, 0.75)' : '#6b7280'
 
-  wrapper.append(title, details, hint)
+  const promptSection = doc.createElement('div')
+  promptSection.style.display = 'flex'
+  promptSection.style.flexDirection = 'column'
+  promptSection.style.gap = '0.35rem'
+
+  const promptButton = createActionButton(doc, 'Copy fix prompt')
+  promptButton.style.alignSelf = 'flex-start'
+
+  const promptStatus = doc.createElement('span')
+  promptStatus.style.margin = '0'
+  promptStatus.style.fontSize = '0.7rem'
+  promptStatus.style.display = 'none'
+
+  const promptText = buildMermaidFixPrompt(errorMessage, source)
+
+  const promptPreview = doc.createElement('textarea')
+  promptPreview.value = promptText
+  promptPreview.readOnly = true
+  promptPreview.spellcheck = false
+  promptPreview.rows = Math.min(12, Math.max(4, promptText.split('\n').length + 1))
+  promptPreview.style.display = 'none'
+  promptPreview.style.width = '100%'
+  promptPreview.style.padding = '0.75rem'
+  promptPreview.style.borderRadius = '0.5rem'
+  promptPreview.style.border = getBorderColor()
+  promptPreview.style.background = isDarkMode() ? 'rgba(30, 41, 59, 0.85)' : 'rgba(248, 250, 252, 0.9)'
+  promptPreview.style.color = getPrimaryTextColor()
+  promptPreview.style.fontSize = '0.75rem'
+  promptPreview.style.lineHeight = '1.4'
+  promptPreview.style.fontFamily =
+    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+  promptPreview.style.resize = 'vertical'
+
+  const defaultLabel = promptButton.dataset['coderchartLabel'] || 'Copy fix prompt'
+
+  promptButton.addEventListener('click', async () => {
+    promptButton.disabled = true
+    promptButton.textContent = 'Copying...'
+    promptPreview.style.display = 'block'
+
+    const copied = await copyTextToClipboard(doc, promptText)
+
+    promptStatus.style.display = 'block'
+    if (copied) {
+      promptStatus.textContent = 'Prompt copied to your clipboard. Paste it back into ChatGPT to request a fix.'
+      promptStatus.style.color = isDarkMode() ? 'rgba(134, 239, 172, 0.9)' : '#166534'
+      promptButton.textContent = 'Prompt copied!'
+    } else {
+      promptStatus.textContent = 'Clipboard access was blocked. Copy the prompt below manually.'
+      promptStatus.style.color = isDarkMode() ? 'rgba(248, 113, 113, 0.9)' : '#b91c1c'
+      promptButton.textContent = 'Copy fix prompt'
+      promptPreview.focus()
+      promptPreview.select()
+    }
+
+    setTimeout(() => {
+      promptButton.disabled = false
+      promptButton.textContent = defaultLabel
+    }, 2000)
+  })
+
+  promptSection.append(promptButton, promptStatus, promptPreview)
+
+  wrapper.append(title, details, hint, promptSection)
   return wrapper
+}
+
+function buildMermaidFixPrompt(errorMessage: string, source: string): string {
+  const trimmedSource = source.trim()
+  const formattedSource = trimmedSource ? `\n\n\`\`\`mermaid\n${trimmedSource}\n\`\`\`` : ''
+  return (
+    'The Mermaid diagram you generated could not be rendered by the CoderChart extension.' +
+    `\nParse error: ${errorMessage}` +
+    '\nPlease acknowledge that your earlier response included invalid Mermaid syntax and provide a corrected diagram.' +
+    '\nRespond with only the Mermaid code block using valid Mermaid syntax.' +
+    (formattedSource
+      ? `${formattedSource}\n`
+      : '\nIf you need the original code, please restate it before sending the fix.\n')
+  )
+}
+
+async function copyTextToClipboard(doc: Document, text: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (err) {
+      console.warn('Failed to copy prompt via navigator.clipboard', err)
+    }
+  }
+
+  if (!doc.body) {
+    return false
+  }
+
+  const textarea = doc.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  textarea.style.pointerEvents = 'none'
+  textarea.style.top = '0'
+  textarea.style.left = '0'
+  doc.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+
+  let copied = false
+  try {
+    copied = doc.execCommand('copy')
+  } catch (err) {
+    console.warn('Failed to copy prompt via execCommand', err)
+  }
+
+  textarea.remove()
+  return copied
 }
 
 function clearRenderedBlocks() {
