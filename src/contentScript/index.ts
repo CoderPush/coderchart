@@ -8,6 +8,7 @@ import { doesUrlMatchPatterns } from '../shared/url'
 const BLOCK_DATA_STATUS = 'coderchartStatus'
 const BLOCK_DATA_SOURCE = 'coderchartSource'
 const PNG_PREPARING_LABEL = 'Preparing PNG…'
+const PROMPT_RESET_DELAY_MS = 2000
 let diagramCounter = 0
 let blockIdentifierCounter = 0
 let observer: MutationObserver | null = null
@@ -737,9 +738,10 @@ function createErrorNotice(doc: Document, err: unknown, source: string): HTMLEle
     }
 
     setTimeout(() => {
+      if (!promptButton.isConnected) return
       promptButton.disabled = false
       promptButton.textContent = defaultLabel
-    }, 2000)
+    }, PROMPT_RESET_DELAY_MS)
   })
 
   promptSection.append(promptButton, promptStatus, promptPreview)
