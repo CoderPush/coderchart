@@ -9,6 +9,13 @@ Summary
   5. version timestamp follow the yyyy.MM.dd format
 ```
 
+## [1.1.0](https://github.com/CoderPush/coderchart/compare/v1.0.0...v1.1.0) (2025-09-27)
+
+
+### Features
+
+* Add copy-to-clipboard fix prompt to Mermaid error notice ([#2](https://github.com/CoderPush/coderchart/issues/2)) ([7fb5785](https://github.com/CoderPush/coderchart/commit/7fb57851b6767cf83e5e338c51c5d9afa6862efa))
+
 ## 1.0.0 (2025-09-26)
 
 
