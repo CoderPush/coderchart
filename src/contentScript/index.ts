@@ -429,7 +429,7 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
     codeToggle.setAttribute('aria-pressed', view === 'code' ? 'true' : 'false')
     updateButtonAppearance(diagramToggle)
     updateButtonAppearance(codeToggle)
-    updateCollapsedState(container)
+    updatePaneVisibility(container)
   }
 
   entry.setView = applyView
@@ -449,24 +449,20 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
   return entry
 }
 
-function updateCollapsedState(container: HTMLElement) {
-  const isCollapsed = container.dataset['collapsed'] === 'true'
+function updatePaneVisibility(container: HTMLElement) {
   const body = container.querySelector('[data-coderchart-body="true"]') as HTMLElement | null
   if (!body) return
-  body.style.display = isCollapsed ? 'none' : 'block'
+  body.style.display = 'block'
 
   const view = (container.dataset['view'] as 'diagram' | 'code') || 'diagram'
   const diagramHost = body.querySelector('[data-coderchart-pane="diagram"]') as HTMLElement | null
   const codeHost = body.querySelector('[data-coderchart-pane="code"]') as HTMLElement | null
 
-  const showDiagram = !isCollapsed && view === 'diagram'
-  const showCode = !isCollapsed && view === 'code'
-
   if (diagramHost) {
-    diagramHost.style.display = showDiagram ? 'block' : 'none'
+    diagramHost.style.display = view === 'diagram' ? 'block' : 'none'
   }
   if (codeHost) {
-    codeHost.style.display = showCode ? 'block' : 'none'
+    codeHost.style.display = view === 'code' ? 'block' : 'none'
   }
 }
 
