@@ -314,11 +314,7 @@ async function renderBlock(block: MermaidBlock) {
     updateDownloadButtons(registry)
     cleanupGhostNodes(renderId, diagramHost.ownerDocument)
 
-    if (registry.userSelectedView === 'code') {
-      registry.setView('code')
-    } else {
-      registry.setView('diagram')
-    }
+    registry.setView('diagram')
   }
 }
 
