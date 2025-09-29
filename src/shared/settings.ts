@@ -10,12 +10,19 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   hostPatterns: ['https://chatgpt.com/*', 'https://chat.openai.com/*'],
 }
 
-export async function getSettings(): Promise<ExtensionSettings> {
+type GetSettingsOptions = {
+  throwOnError?: boolean
+}
+
+export async function getSettings(options: GetSettingsOptions = {}): Promise<ExtensionSettings> {
   try {
     const stored = await chrome.storage.sync.get(STORAGE_KEY)
     return normalizeSettings(stored[STORAGE_KEY])
   } catch (err) {
     console.warn('Failed to load settings, falling back to defaults', err)
+    if (options.throwOnError) {
+      throw err
+    }
     return DEFAULT_SETTINGS
   }
 }
@@ -33,7 +40,10 @@ export function normalizeSettings(input: unknown): ExtensionSettings {
   const record = input as Partial<ExtensionSettings>
   const autoRender = typeof record.autoRender === 'boolean' ? record.autoRender : DEFAULT_SETTINGS.autoRender
   const hostPatterns = Array.isArray(record.hostPatterns)
-    ? record.hostPatterns.filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+    ? record.hostPatterns
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter(Boolean)
     : DEFAULT_SETTINGS.hostPatterns
 
   return {

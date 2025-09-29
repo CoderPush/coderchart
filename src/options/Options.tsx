@@ -17,7 +17,7 @@ export const Options = () => {
 
   useEffect(() => {
     let mounted = true
-    getSettings()
+    getSettings({ throwOnError: true })
       .then((loaded) => {
         if (!mounted) return
         setSettings(cloneSettings(loaded))
@@ -25,6 +25,7 @@ export const Options = () => {
       .catch((error) => {
         console.warn('Failed to load settings', error)
         if (mounted) {
+          setSettings(cloneSettings(DEFAULT_SETTINGS))
           setErrorMessage('Unable to load settings. Using defaults.')
         }
       })
