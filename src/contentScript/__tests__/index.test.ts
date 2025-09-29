@@ -39,4 +39,45 @@ describe('content script', () => {
     expect(mermaidInitialize).toHaveBeenCalled()
     expect(mermaidRender).toHaveBeenCalledWith(expect.stringMatching(/^coderchart-/), expect.stringContaining('graph TD'))
   })
+
+  it('allows toggling between diagram and code views and persists selection', async () => {
+    await import('../index')
+
+    await waitFor(() => {
+      expect(document.querySelector('svg')).toBeInTheDocument()
+    })
+
+    const container = document.querySelector('[data-coderchart-container="true"]') as HTMLElement
+    expect(container).toBeTruthy()
+
+    await waitFor(() => {
+      expect(container.dataset['view']).toBe('diagram')
+    })
+
+    const diagramPane = container.querySelector('[data-coderchart-pane="diagram"]') as HTMLElement
+    const codePane = container.querySelector('[data-coderchart-pane="code"]') as HTMLElement
+    expect(diagramPane).toBeTruthy()
+    expect(codePane).toBeTruthy()
+    expect(diagramPane.style.display).toBe('block')
+    expect(codePane.style.display).toBe('none')
+
+    const codeToggle = container.querySelector('button[data-coderchart-label="Code"]') as HTMLButtonElement
+    expect(codeToggle).toBeTruthy()
+    codeToggle.click()
+
+    expect(container.dataset['view']).toBe('code')
+    expect(diagramPane.style.display).toBe('none')
+    expect(codePane.style.display).toBe('block')
+
+    const codeElement = document.querySelector('code') as HTMLElement
+    codeElement.textContent = 'graph TD; X-->Y;'
+
+    await waitFor(() => {
+      expect(mermaidRender.mock.calls.length).toBeGreaterThanOrEqual(2)
+    })
+
+    expect(container.dataset['view']).toBe('code')
+    expect(diagramPane.style.display).toBe('none')
+    expect(codePane.style.display).toBe('block')
+  })
 })

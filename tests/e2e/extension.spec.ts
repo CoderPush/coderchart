@@ -31,5 +31,23 @@ test.describe('CoderChart extension e2e', () => {
     const diagram = page.locator('svg')
     await expect(diagram).toHaveCount(1)
     await expect(diagram).toBeVisible()
+
+    const container = page.locator('[data-coderchart-container="true"]').first()
+    const diagramToggle = container.getByRole('button', { name: 'Diagram' })
+    const codeToggle = container.getByRole('button', { name: 'Code' })
+    const diagramPane = container.locator('[data-coderchart-pane="diagram"]')
+    const codePane = container.locator('[data-coderchart-pane="code"]')
+
+    await expect(diagramToggle).toHaveAttribute('aria-pressed', 'true')
+    await expect(codeToggle).toHaveAttribute('aria-pressed', 'false')
+    await expect(diagramPane).toBeVisible()
+    await expect(codePane).toBeHidden()
+
+    await codeToggle.click()
+
+    await expect(codeToggle).toHaveAttribute('aria-pressed', 'true')
+    await expect(diagramToggle).toHaveAttribute('aria-pressed', 'false')
+    await expect(diagramPane).toBeHidden()
+    await expect(codePane).toBeVisible()
   })
 })
