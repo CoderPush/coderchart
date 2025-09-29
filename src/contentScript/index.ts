@@ -382,7 +382,11 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
 
   container.append(body)
 
-  pre.insertAdjacentElement('afterend', container)
+  if (typeof pre.insertAdjacentElement === 'function') {
+    pre.insertAdjacentElement('afterend', container)
+  } else if (pre.parentNode) {
+    pre.parentNode.insertBefore(container, pre.nextSibling)
+  }
 
   const entry: BlockRegistryEntry = {
     id: blockId,
@@ -480,6 +484,9 @@ async function configureMermaid() {
 function isDarkMode(): boolean {
   if (document.documentElement.classList.contains('dark')) {
     return true
+  }
+  if (typeof window.matchMedia !== 'function') {
+    return false
   }
   return window.matchMedia('(prefers-color-scheme: dark)').matches
 }

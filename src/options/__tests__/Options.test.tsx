@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Options } from '../Options'
 import { setChromeStorageSync, chromeMock } from 'test/mocks/chrome'
 
@@ -49,6 +49,12 @@ describe('Options page', () => {
   })
 
   it('shows an error message when loading settings fails', async () => {
+    // Mock console methods to suppress expected error logs during this test
+    const consoleMocks = {
+      warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
+      error: vi.spyOn(console, 'error').mockImplementation(() => {})
+    }
+
     chromeMock.storage.sync.get.mockRejectedValueOnce(new Error('nope'))
 
     render(<Options />)
@@ -56,5 +62,9 @@ describe('Options page', () => {
     await waitFor(() => {
       expect(screen.getByText(/unable to load settings/i)).toBeInTheDocument()
     })
+
+    // Restore console methods
+    consoleMocks.warn.mockRestore()
+    consoleMocks.error.mockRestore()
   })
 })

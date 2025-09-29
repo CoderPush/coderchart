@@ -14,7 +14,7 @@ describe('normalizeSettings', () => {
     })
 
     expect(result.autoRender).toBe(false)
-    expect(result.hostPatterns).toEqual(['  https://valid.com/*  '])
+    expect(result.hostPatterns).toEqual(['https://valid.com/*'])
   })
 
   it('reverts to defaults when pattern list becomes empty', () => {

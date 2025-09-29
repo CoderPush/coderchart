@@ -25,7 +25,7 @@ The dev server pipes hot reloads into the extension. Load the unpacked folder sh
 | --- | --- |
 | `pnpm test` | Run the unit and component suite with Vitest. |
 | `pnpm test:watch` | Start Vitest in watch mode with the interactive UI. |
-| `pnpm test:coverage` | Generate coverage reports with `c8` (HTML + LCOV in `coverage/`). |
+| `pnpm test:coverage` | Generate coverage reports with V8 (HTML + LCOV in `coverage/`). |
 | `pnpm test:e2e` | Execute the Playwright end-to-end flow against a mocked ChatGPT page. |
 
 The Vitest environment uses `happy-dom` alongside Testing Library helpers and a mocked `chrome` namespace so background, content script, and UI logic can share fixtures. End-to-end tests require Chromium with extension support; Playwright automatically builds and packages the extension via `pnpm zip` before launching the browser.

@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      test: resolve(__dirname, 'test'),
     },
   },
   test: {
@@ -14,7 +15,7 @@ export default defineConfig({
     setupFiles: ['test/setup/vitest.setup.ts'],
     globals: true,
     coverage: {
-      provider: 'c8',
+      provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,tsx}'],
@@ -27,7 +28,11 @@ export default defineConfig({
       'test/**/*.test.ts',
     ],
     deps: {
-      inline: ['@testing-library/jest-dom'],
+      optimizer: {
+        web: {
+          include: ['@testing-library/jest-dom'],
+        },
+      },
     },
   },
 })
