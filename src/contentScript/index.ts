@@ -48,7 +48,9 @@ type BlockRegistryEntry = {
   id: string
   container: HTMLElement
   diagramHost: HTMLElement
-  collapseButton: HTMLButtonElement
+  codeHost: HTMLElement
+  setView: (view: 'diagram' | 'code', options?: { userInitiated?: boolean }) => void
+  userSelectedView: 'diagram' | 'code' | null
   downloadSvgButton: HTMLButtonElement
   downloadPngButton: HTMLButtonElement
   lastSvg: string | null
@@ -292,6 +294,12 @@ async function renderBlock(block: MermaidBlock) {
     registry.lastRenderId = renderId
     updateDownloadButtons(registry)
     cleanupGhostNodes(renderId, diagramHost.ownerDocument)
+
+    if (registry.userSelectedView !== 'code') {
+      registry.setView('diagram')
+    } else {
+      registry.setView('code')
+    }
   } catch (err) {
     if (container.dataset[BLOCK_DATA_SOURCE] !== source) {
       cleanupGhostNodes(renderId, diagramHost.ownerDocument)
@@ -305,6 +313,8 @@ async function renderBlock(block: MermaidBlock) {
     registry.lastRenderId = undefined
     updateDownloadButtons(registry)
     cleanupGhostNodes(renderId, diagramHost.ownerDocument)
+
+    registry.setView('diagram')
   }
 }
 
@@ -342,12 +352,18 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
   actionGroup.style.alignItems = 'center'
   actionGroup.style.gap = '0.5rem'
 
-  const collapseButton = createActionButton(doc, 'Hide diagram')
+  const viewToggleGroup = doc.createElement('div')
+  viewToggleGroup.style.display = 'flex'
+  viewToggleGroup.style.alignItems = 'center'
+  viewToggleGroup.style.gap = '0.35rem'
 
-  const openRawButton = createActionButton(doc, 'Scroll to code')
-  openRawButton.addEventListener('click', () => {
-    pre.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  })
+  const diagramToggle = createActionButton(doc, 'Diagram')
+  diagramToggle.dataset['coderchartToggle'] = 'true'
+  diagramToggle.setAttribute('aria-pressed', 'false')
+
+  const codeToggle = createActionButton(doc, 'Code')
+  codeToggle.dataset['coderchartToggle'] = 'true'
+  codeToggle.setAttribute('aria-pressed', 'false')
 
   const downloadSvgButton = createActionButton(doc, 'Download SVG')
   downloadSvgButton.addEventListener('click', () => {
@@ -359,56 +375,95 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
     void handleDownloadPng(pre)
   })
 
-  collapseButton.addEventListener('click', () => {
-    const isHidden = container.dataset['collapsed'] === 'true'
-    if (isHidden) {
-      container.dataset['collapsed'] = 'false'
-      collapseButton.textContent = 'Hide diagram'
-    } else {
-      container.dataset['collapsed'] = 'true'
-      collapseButton.textContent = 'Show diagram'
-    }
-    updateCollapsedState(container)
-  })
+  viewToggleGroup.append(diagramToggle, codeToggle)
 
-  actionGroup.append(collapseButton, openRawButton, downloadSvgButton, downloadPngButton)
+  actionGroup.append(viewToggleGroup, downloadSvgButton, downloadPngButton)
   header.append(title, actionGroup)
   container.append(header)
 
   const body = doc.createElement('div')
+  body.dataset['coderchartBody'] = 'true'
   body.style.background = getBodyBackground()
   body.style.padding = '1rem'
   body.style.overflowX = 'auto'
 
+  const diagramHost = doc.createElement('div')
+  diagramHost.dataset['coderchartPane'] = 'diagram'
+  diagramHost.style.display = 'none'
+
+  const codeHost = doc.createElement('div')
+  codeHost.dataset['coderchartPane'] = 'code'
+  codeHost.style.display = 'none'
+
+  body.append(diagramHost, codeHost)
   container.append(body)
 
   if (typeof pre.insertAdjacentElement === 'function') {
-    pre.insertAdjacentElement('afterend', container)
+    pre.insertAdjacentElement('beforebegin', container)
   } else if (pre.parentNode) {
-    pre.parentNode.insertBefore(container, pre.nextSibling)
+    pre.parentNode.insertBefore(container, pre)
   }
+
+  codeHost.append(pre)
 
   const entry: BlockRegistryEntry = {
     id: blockId,
     container,
-    diagramHost: body,
-    collapseButton,
+    diagramHost,
+    codeHost,
+    setView: () => undefined,
+    userSelectedView: null,
     downloadSvgButton,
     downloadPngButton,
     lastSvg: null,
   }
+
+  const applyView = (view: 'diagram' | 'code', options?: { userInitiated?: boolean }) => {
+    if (options?.userInitiated) {
+      entry.userSelectedView = view
+    }
+    container.dataset['view'] = view
+    diagramToggle.dataset['coderchartActive'] = view === 'diagram' ? 'true' : 'false'
+    codeToggle.dataset['coderchartActive'] = view === 'code' ? 'true' : 'false'
+    diagramToggle.setAttribute('aria-pressed', view === 'diagram' ? 'true' : 'false')
+    codeToggle.setAttribute('aria-pressed', view === 'code' ? 'true' : 'false')
+    updateButtonAppearance(diagramToggle)
+    updateButtonAppearance(codeToggle)
+    updatePaneVisibility(container)
+  }
+
+  entry.setView = applyView
+
+  diagramToggle.addEventListener('click', () => {
+    applyView('diagram', { userInitiated: true })
+  })
+
+  codeToggle.addEventListener('click', () => {
+    applyView('code', { userInitiated: true })
+  })
+
   processedBlocks.set(pre, entry)
-  updateCollapsedState(container)
+  applyView('code')
   updateDownloadButtons(entry)
 
   return entry
 }
 
-function updateCollapsedState(container: HTMLElement) {
-  const isCollapsed = container.dataset['collapsed'] === 'true'
-  const body = container.lastElementChild as HTMLElement | null
+function updatePaneVisibility(container: HTMLElement) {
+  const body = container.querySelector('[data-coderchart-body="true"]') as HTMLElement | null
   if (!body) return
-  body.style.display = isCollapsed ? 'none' : 'block'
+  body.style.display = 'block'
+
+  const view = (container.dataset['view'] as 'diagram' | 'code') || 'diagram'
+  const diagramHost = body.querySelector('[data-coderchart-pane="diagram"]') as HTMLElement | null
+  const codeHost = body.querySelector('[data-coderchart-pane="code"]') as HTMLElement | null
+
+  if (diagramHost) {
+    diagramHost.style.display = view === 'diagram' ? 'block' : 'none'
+  }
+  if (codeHost) {
+    codeHost.style.display = view === 'code' ? 'block' : 'none'
+  }
 }
 
 function createActionButton(doc: Document, label: string): HTMLButtonElement {
@@ -421,17 +476,28 @@ function createActionButton(doc: Document, label: string): HTMLButtonElement {
   button.style.padding = '0.25rem 0.75rem'
   button.style.borderRadius = '0.5rem'
   button.style.border = getButtonBorder()
-  button.style.background = getButtonBackground()
-  button.style.color = getPrimaryTextColor()
+  updateButtonAppearance(button)
   button.style.cursor = 'pointer'
   button.style.transition = 'background 150ms ease, border 150ms ease'
   button.addEventListener('mouseenter', () => {
     button.style.background = getButtonHoverBackground()
+    if (button.dataset['coderchartToggle'] === 'true') {
+      button.style.opacity = '1'
+    }
   })
   button.addEventListener('mouseleave', () => {
-    button.style.background = getButtonBackground()
+    updateButtonAppearance(button)
   })
   return button
+}
+
+function updateButtonAppearance(button: HTMLButtonElement) {
+  const isToggle = button.dataset['coderchartToggle'] === 'true'
+  const isActive = button.dataset['coderchartActive'] === 'true'
+  button.style.border = getButtonBorder()
+  button.style.background = isToggle && isActive ? getButtonHoverBackground() : getButtonBackground()
+  button.style.color = getPrimaryTextColor()
+  button.style.opacity = isToggle ? (isActive ? '1' : '0.75') : '1'
 }
 
 function getPrimaryTextColor(): string {
@@ -825,10 +891,7 @@ function refreshContainerStyles() {
     }
     entry.diagramHost.style.background = getBodyBackground()
     entry.container.querySelectorAll('button').forEach((element) => {
-      const button = element as HTMLButtonElement
-      button.style.border = getButtonBorder()
-      button.style.background = getButtonBackground()
-      button.style.color = getPrimaryTextColor()
+      updateButtonAppearance(element as HTMLButtonElement)
     })
   })
 }
