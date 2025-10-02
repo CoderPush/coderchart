@@ -9,10 +9,11 @@
 
 ## Toolbar Buttons
 
-- Order actions: `Hide diagram`, `Scroll to code`, `Download SVG`, `Download PNG`.
-- Disable download buttons until render succeeds to avoid empty files.
+- Order actions: `Hide diagram`, `Scroll to code`, `Export` dropdown.
+- Disable export actions until render succeeds to avoid empty files.
 - Provide hover feedback with subtle background changes; use consistent sizes and border radii.
 - Preserve the original label via `data-coderchart-label` so temporary text (e.g. "Preparing PNG…") can revert cleanly.
+- Close the dropdown when users click elsewhere or trigger an action so focus returns predictably.
 
 ## Options Page
 

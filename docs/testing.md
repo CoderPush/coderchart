@@ -16,7 +16,7 @@
 - **Toolbar actions**
   - Use "Hide diagram" / "Show diagram" toggles; ensure state persists while on the page.
   - Click "Scroll to code" and verify smooth scrolling centers the source block.
-  - Download SVG and PNG; confirm filenames are unique per block and PNG output matches expected dimensions.
+  - Open the "Export" dropdown, trigger SVG and PNG exports, and confirm filenames are unique per block while PNG output matches expected dimensions.
   - Induce a Mermaid syntax error and check that the inline error pane displays message + hint.
 - **Extension lifecycle**
   - Reload the extension in `chrome://extensions` to verify background script restores defaults without duplicates.
