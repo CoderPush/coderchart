@@ -51,8 +51,10 @@ type BlockRegistryEntry = {
   codeHost: HTMLElement
   setView: (view: 'diagram' | 'code', options?: { userInitiated?: boolean }) => void
   userSelectedView: 'diagram' | 'code' | null
-  downloadSvgButton: HTMLButtonElement
-  downloadPngButton: HTMLButtonElement
+  exportButton: HTMLButtonElement
+  exportSvgItem: HTMLButtonElement
+  exportPngItem: HTMLButtonElement
+  closeExportMenu: () => void
   lastSvg: string | null
   lastRenderId?: string
 }
@@ -365,19 +367,18 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
   codeToggle.dataset['coderchartToggle'] = 'true'
   codeToggle.setAttribute('aria-pressed', 'false')
 
-  const downloadSvgButton = createActionButton(doc, 'Download SVG')
-  downloadSvgButton.addEventListener('click', () => {
-    handleDownloadSvg(pre)
-  })
-
-  const downloadPngButton = createActionButton(doc, 'Download PNG')
-  downloadPngButton.addEventListener('click', () => {
-    void handleDownloadPng(pre)
+  const exportDropdown = createExportDropdown(doc, {
+    onSvg: () => {
+      handleDownloadSvg(pre)
+    },
+    onPng: () => {
+      void handleDownloadPng(pre)
+    },
   })
 
   viewToggleGroup.append(diagramToggle, codeToggle)
 
-  actionGroup.append(viewToggleGroup, downloadSvgButton, downloadPngButton)
+  actionGroup.append(viewToggleGroup, exportDropdown.container)
   header.append(title, actionGroup)
   container.append(header)
 
@@ -413,8 +414,10 @@ function ensureContainer(pre: HTMLElement): BlockRegistryEntry {
     codeHost,
     setView: () => undefined,
     userSelectedView: null,
-    downloadSvgButton,
-    downloadPngButton,
+    exportButton: exportDropdown.trigger,
+    exportSvgItem: exportDropdown.svgItem,
+    exportPngItem: exportDropdown.pngItem,
+    closeExportMenu: exportDropdown.close,
     lastSvg: null,
   }
 
@@ -489,6 +492,176 @@ function createActionButton(doc: Document, label: string): HTMLButtonElement {
     updateButtonAppearance(button)
   })
   return button
+}
+
+type ExportDropdown = {
+  container: HTMLElement
+  trigger: HTMLButtonElement
+  svgItem: HTMLButtonElement
+  pngItem: HTMLButtonElement
+  close: () => void
+}
+
+function createExportDropdown(
+  doc: Document,
+  handlers: { onSvg: () => void; onPng: () => void },
+): ExportDropdown {
+  const container = doc.createElement('div')
+  container.style.position = 'relative'
+  container.style.display = 'flex'
+
+  const trigger = createActionButton(doc, 'Export')
+  trigger.textContent = 'Export ▾'
+  trigger.dataset['coderchartLabel'] = 'Export'
+  trigger.setAttribute('aria-haspopup', 'menu')
+  trigger.setAttribute('aria-expanded', 'false')
+
+  const menu = doc.createElement('div')
+  menu.dataset['coderchartExportMenu'] = 'true'
+  menu.style.position = 'absolute'
+  menu.style.top = 'calc(100% + 0.35rem)'
+  menu.style.right = '0'
+  menu.style.display = 'flex'
+  menu.style.flexDirection = 'column'
+  menu.style.gap = '0.25rem'
+  menu.style.padding = '0.35rem'
+  menu.style.borderRadius = '0.5rem'
+  menu.style.border = getButtonBorder()
+  menu.style.background = getBodyBackground()
+  menu.style.boxShadow = isDarkMode()
+    ? '0 12px 24px rgba(15, 23, 42, 0.45)'
+    : '0 12px 24px rgba(15, 23, 42, 0.18)'
+  menu.style.minWidth = '8.5rem'
+  menu.style.zIndex = '2147483647'
+  menu.hidden = true
+  menu.setAttribute('role', 'menu')
+
+  const svgItem = createExportMenuItem(doc, 'Export SVG')
+  svgItem.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (svgItem.disabled) return
+    closeMenu()
+    handlers.onSvg()
+  })
+
+  const pngItem = createExportMenuItem(doc, 'Export PNG')
+  pngItem.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (pngItem.disabled) return
+    closeMenu()
+    handlers.onPng()
+  })
+
+  menu.append(svgItem, pngItem)
+
+  const handleDocumentClick = (event: MouseEvent) => {
+    if (!container.contains(event.target as Node)) {
+      closeMenu()
+    }
+  }
+
+  const handleDocumentKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      closeMenu()
+      trigger.focus()
+    }
+  }
+
+  const openMenu = () => {
+    if (!menu.hidden) return
+    menu.hidden = false
+    trigger.setAttribute('aria-expanded', 'true')
+    doc.addEventListener('click', handleDocumentClick, true)
+    doc.addEventListener('keydown', handleDocumentKeydown, true)
+  }
+
+  const closeMenu = () => {
+    if (menu.hidden) return
+    menu.hidden = true
+    trigger.setAttribute('aria-expanded', 'false')
+    doc.removeEventListener('click', handleDocumentClick, true)
+    doc.removeEventListener('keydown', handleDocumentKeydown, true)
+  }
+
+  trigger.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (trigger.disabled) {
+      closeMenu()
+      return
+    }
+    if (menu.hidden) {
+      openMenu()
+    } else {
+      closeMenu()
+    }
+  })
+
+  trigger.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' && menu.hidden && !trigger.disabled) {
+      event.preventDefault()
+      openMenu()
+      svgItem.focus()
+    }
+  })
+
+  menu.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') {
+      closeMenu()
+    }
+  })
+
+  container.append(trigger, menu)
+
+  updateExportMenuItemState(svgItem)
+  updateExportMenuItemState(pngItem)
+
+  return {
+    container,
+    trigger,
+    svgItem,
+    pngItem,
+    close: closeMenu,
+  }
+}
+
+function createExportMenuItem(doc: Document, label: string): HTMLButtonElement {
+  const button = doc.createElement('button')
+  button.type = 'button'
+  button.textContent = label
+  button.dataset['coderchartLabel'] = label
+  button.dataset['coderchartMenuItem'] = 'true'
+  button.style.fontSize = '0.75rem'
+  button.style.fontWeight = '500'
+  button.style.padding = '0.4rem 0.75rem'
+  button.style.border = 'none'
+  button.style.borderRadius = '0.4rem'
+  button.style.background = 'transparent'
+  button.style.color = getPrimaryTextColor()
+  button.style.textAlign = 'left'
+  button.style.cursor = 'pointer'
+  button.style.transition = 'background 150ms ease, opacity 150ms ease'
+
+  const resetBackground = () => {
+    button.style.background = 'transparent'
+  }
+
+  button.addEventListener('mouseenter', () => {
+    if (button.disabled) return
+    button.style.background = getButtonHoverBackground()
+  })
+  button.addEventListener('mouseleave', resetBackground)
+  button.addEventListener('blur', resetBackground)
+  button.addEventListener('focus', () => {
+    if (button.disabled) return
+    button.style.background = getButtonHoverBackground()
+  })
+
+  return button
+}
+
+function updateExportMenuItemState(button: HTMLButtonElement) {
+  button.style.opacity = button.disabled ? '0.55' : '1'
+  button.style.cursor = button.disabled ? 'not-allowed' : 'pointer'
 }
 
 function updateButtonAppearance(button: HTMLButtonElement) {
@@ -584,8 +757,14 @@ function cleanupGhostNodes(renderId: string, doc: Document) {
 
 function updateDownloadButtons(entry: BlockRegistryEntry) {
   const hasRenderableSvg = Boolean(entry.lastSvg)
-  entry.downloadSvgButton.disabled = !hasRenderableSvg
-  entry.downloadPngButton.disabled = !hasRenderableSvg
+  entry.exportButton.disabled = !hasRenderableSvg
+  entry.exportSvgItem.disabled = !hasRenderableSvg
+  entry.exportPngItem.disabled = !hasRenderableSvg
+  updateExportMenuItemState(entry.exportSvgItem)
+  updateExportMenuItemState(entry.exportPngItem)
+  if (!hasRenderableSvg) {
+    entry.closeExportMenu()
+  }
 }
 
 function handleDownloadSvg(pre: HTMLElement) {
@@ -593,6 +772,8 @@ function handleDownloadSvg(pre: HTMLElement) {
   if (!entry || !entry.lastSvg) {
     return
   }
+
+  entry.closeExportMenu()
 
   const blob = new Blob([entry.lastSvg], { type: 'image/svg+xml;charset=utf-8' })
   triggerDownload(blob, buildFilename(entry, 'svg'))
@@ -604,10 +785,13 @@ async function handleDownloadPng(pre: HTMLElement) {
     return
   }
 
-  const button = entry.downloadPngButton
-  const defaultLabel = button.dataset['coderchartLabel'] || 'Download PNG'
+  entry.closeExportMenu()
+
+  const button = entry.exportPngItem
+  const defaultLabel = button.dataset['coderchartLabel'] || 'Export PNG'
   button.disabled = true
   button.textContent = PNG_PREPARING_LABEL
+  updateExportMenuItemState(button)
 
   try {
     const pngBlob = await convertSvgToPng(entry.lastSvg)
@@ -616,6 +800,8 @@ async function handleDownloadPng(pre: HTMLElement) {
     console.warn('Failed to export diagram as PNG', err)
   } finally {
     button.textContent = defaultLabel
+    button.disabled = false
+    updateExportMenuItemState(button)
     updateDownloadButtons(entry)
   }
 }
@@ -891,7 +1077,23 @@ function refreshContainerStyles() {
     }
     entry.diagramHost.style.background = getBodyBackground()
     entry.container.querySelectorAll('button').forEach((element) => {
-      updateButtonAppearance(element as HTMLButtonElement)
+      const button = element as HTMLButtonElement
+      if (button.dataset['coderchartMenuItem'] === 'true') {
+        button.style.color = getPrimaryTextColor()
+        updateExportMenuItemState(button)
+      } else {
+        updateButtonAppearance(button)
+      }
     })
+    entry.container
+      .querySelectorAll('[data-coderchart-export-menu="true"]')
+      .forEach((menuElement) => {
+        const menu = menuElement as HTMLElement
+        menu.style.border = getButtonBorder()
+        menu.style.background = getBodyBackground()
+        menu.style.boxShadow = isDarkMode()
+          ? '0 12px 24px rgba(15, 23, 42, 0.45)'
+          : '0 12px 24px rgba(15, 23, 42, 0.18)'
+      })
   })
 }
