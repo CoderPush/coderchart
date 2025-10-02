@@ -9,6 +9,13 @@ Summary
   5. version timestamp follow the yyyy.MM.dd format
 ```
 
+## [1.2.0](https://github.com/CoderPush/coderchart/compare/v1.1.0...v1.2.0) (2025-10-02)
+
+
+### Features
+
+* Add export dropdown for diagram downloads ([#11](https://github.com/CoderPush/coderchart/issues/11)) ([0945256](https://github.com/CoderPush/coderchart/commit/0945256426dacbd0adcb484c54a3af1a1c8d277e))
+
 ## [1.1.0](https://github.com/CoderPush/coderchart/compare/v1.0.0...v1.1.0) (2025-09-29)
 
 
