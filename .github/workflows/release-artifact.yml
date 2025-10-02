@@ -1,8 +1,6 @@
 name: Build Release Package
 
 on:
-  release:
-    types: [published, prereleased]
   workflow_dispatch:
     inputs:
       tag:
@@ -45,12 +43,7 @@ jobs:
 
       - name: Determine release tag
         id: release
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
 
       - name: Upload package to release
         uses: softprops/action-gh-release@v2
