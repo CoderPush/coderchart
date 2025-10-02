@@ -1,7 +1,7 @@
 {
   "name": "coderchart",
   "displayName": "coderchart",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "harley",
   "description": "Chrome extension that auto-renders Mermaid diagrams on ChatGPT with inline downloads.",
   "type": "module",
